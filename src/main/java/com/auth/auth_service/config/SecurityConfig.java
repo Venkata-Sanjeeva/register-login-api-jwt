@@ -1,5 +1,7 @@
 package com.auth.auth_service.config;
 
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +18,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import org.springframework.web.cors.CorsConfiguration; // Servlet version
+import org.springframework.web.cors.CorsConfigurationSource; // Servlet version
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // Servlet version
 
 import com.auth.auth_service.security.JWTAuthFilter;
 import com.auth.auth_service.service.CustomUserDetailsService;
@@ -44,8 +50,8 @@ public class SecurityConfig {
                         		"/api/public/**",
                         		
                         		// Swagger-ui documentation
-                        		"/swagger-ui/**", 
-                        		"/v3/api-docs/**").permitAll()
+                        		"/v3/api-docs/**",
+                        	    "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // AuthenticationProvider must be linked here
@@ -55,9 +61,24 @@ public class SecurityConfig {
     }
     
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+    	CorsConfiguration configuration = new CorsConfiguration();
+        // Use allowedOriginPatterns instead of allowedOrigins("*") if you ever use credentials
+        configuration.setAllowedOrigins(Arrays.asList("*")); 
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowCredentials(false); // Set to true if needed, but origins cannot be "*"
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+    
+    @Bean
     public AuthenticationProvider authenticationProvider() {
         // Pass the service directly into the constructor as the error requires
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(customUserDetailsService);
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(customUserDetailsService);
         
         // Set the password encoder separately
         authProvider.setPasswordEncoder(passwordEncoder());
